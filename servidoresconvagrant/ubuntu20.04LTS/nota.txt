@@ -1,0 +1,33 @@
+# Configuración inicial de Vagrant
+Vagrant.configure("2") do |config|
+
+  # Especifica la imagen base a usar para la máquina virtual, en este caso, Ubuntu 20.04 LTS.
+  config.vm.box = "ubuntu/focal64"
+
+  # Configuración del proveedor de virtualización, VirtualBox, con especificaciones de hardware.
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "3072"  # Asigna 3 GB de memoria RAM a la máquina virtual.
+    vb.cpus = 2         # Asigna 2 núcleos de CPU a la máquina virtual.
+  end
+
+  # Configura una red privada para la máquina virtual, asignándole una IP estática.
+  config.vm.network "private_network", ip: "192.168.56.10"
+  
+  # Establece una redirección de puertos para que el puerto 22 (SSH) de la máquina virtual
+  # se pueda acceder desde el puerto 2222 del host.
+  config.vm.network "forwarded_port", guest: 22, host: 2222, id: "ssh"
+
+  # Un script que se ejecuta la primera vez que se levanta la máquina virtual para realizar configuraciones adicionales.
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
+    # Crea un usuario llamado 'felino' con su respectiva contraseña.
+    sudo useradd -m -s /bin/bash felino
+    echo 'felino:felino' | sudo chpasswd
+  
+    # Modifica la configuración del servidor SSH para permitir la autenticación mediante contraseña.
+    sudo sed -i '/^PasswordAuthentication[[:space:]]no/c\PasswordAuthentication yes' /etc/ssh/sshd_config
+    sudo systemctl restart ssh  # Reinicia el servicio SSH para aplicar los cambios.
+  SHELL
+
+  # Define un nombre personalizado para la máquina virtual, que será 'ubuntuserver20.04LTS'.
+  config.vm.define "ubuntuserver20.04LTS"
+end
